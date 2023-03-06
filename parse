@@ -1,1 +1,92 @@
+#lang racket
 
+(define-syntax-class line)
+(define-syntax-class idx)
+(define-syntax-class stmt)
+(define-syntax-class expr)
+(define-syntax-class etail)
+(define-syntax-class id)
+(define-syntax-class num)
+
+(define-namespace-anchor a)
+(define ns (namespace-anchor->namespace a))
+
+(begin-for-syntax
+  (define (make-regexp str)
+    (regexp (string-append "^" str))))
+  
+(define-syntax-rule (nonterm nt body ...)
+  (begin
+    (define-syntax nt (datum->syntax ns 'nt))
+    (define nt (syntax-case nt ()
+                ((_ a ...) #'(or a ...))))
+    body ...))
+  
+(define-syntax-rule (term nt str)
+  (define-syntax nt (datum->syntax ns 'nt))
+  (define nt (make-regexp str)))
+
+(nonterm line
+  (idx stmt (linetail ...)))
+(nonterm linelist
+  ((line ...) | epsilon))
+(nonterm idx
+  (nonzero_digit (digit ...) ))
+(nonterm linetail
+  (: stmt | epsilon))
+(nonterm stmt
+  ((id = expr) |
+   (if expr then stmt) |
+   (read id) |
+   (write expr) |
+   (goto idx) |
+   (gosub idx) |
+   (return)))
+(nonterm expr
+  ((id etail ...) |
+   (num etail ...) |
+   (( expr ) etail ...)))
+(nonterm etail
+  ((+ expr) |
+   (- expr) |
+   (= expr) |
+   epsilon))
+(term id "[a-zA-Z]+")
+(nonterm num
+  ((numsign (digit digit ...) ) |
+   (digit digit ...)))
+(term numsign "[+-]?")
+(term nonzero_digit "[1-9]")
+(term digit "[0-9]")
+(term EOL "\n")
+
+(define (parse-file file)
+  (call-with-input-file file
+    (lambda (in)
+      (let loop ((line 1)
+                 (parse-result "Accept")
+                 (pending-line '())
+                 (remaining-lines (read-lines in)))
+        (cond
+          ((null? remaining-lines)
+           (if (not (null? pending-line))
+               (string-append parse-result " Syntax error found on line " (number->string line))
+               parse-result))
+          (else
+           (let* ((str (string-trim (car remaining-lines)))
+                  (match? (regexp-match #rx"^[0-9]+.*" str)))
+             (if (and match? (not (null? (cdr match?))))
+                 (loop (+ line 1) parse-result (cons str pending-line) (cdr remaining-lines))
+                 (let ((line-str (string-join (reverse (cons str pending-line)) " "))))
+                   (let ((result (parse-line line-str)))
+                     (if (equal? "Accept" parse-result)
+                         (if (equal? "Accept" result)
+                             (loop (+ line 1) parse-result '() (cdr remaining-lines))
+                             (string-append result " found on line " (number->string line)))
+                         parse-result))))))))))
+
+(define (read-lines in)
+  (let loop ((lines '())
+             (str (read-line in)))
+    (cond
+      ((eof-object? str) (reverse lines))
