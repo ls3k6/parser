@@ -1,3 +1,2 @@
-# CS 441
-Programming Assignment  
-PARSER
+# CS 441 - Programming Assignment  
+# PARSER
