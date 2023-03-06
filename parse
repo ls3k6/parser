@@ -7,25 +7,20 @@
 (define-syntax-class etail)
 (define-syntax-class id)
 (define-syntax-class num)
-
 (define-namespace-anchor a)
 (define ns (namespace-anchor->namespace a))
-
 (begin-for-syntax
   (define (make-regexp str)
     (regexp (string-append "^" str))))
-  
 (define-syntax-rule (nonterm nt body ...)
   (begin
     (define-syntax nt (datum->syntax ns 'nt))
     (define nt (syntax-case nt ()
                 ((_ a ...) #'(or a ...))))
     body ...))
-  
 (define-syntax-rule (term nt str)
   (define-syntax nt (datum->syntax ns 'nt))
   (define nt (make-regexp str)))
-
 (nonterm line
   (idx stmt (linetail ...)))
 (nonterm linelist
@@ -59,7 +54,6 @@
 (term nonzero_digit "[1-9]")
 (term digit "[0-9]")
 (term EOL "\n")
-
 (define (parse-file file)
   (call-with-input-file file
     (lambda (in)
@@ -84,7 +78,6 @@
                              (loop (+ line 1) parse-result '() (cdr remaining-lines))
                              (string-append result " found on line " (number->string line)))
                          parse-result))))))))))
-
 (define (read-lines in)
   (let loop ((lines '())
              (str (read-line in)))
