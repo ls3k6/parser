@@ -1,13 +1,13 @@
 #lang racket
 
-(define-syntax-class line)
-(define-syntax-class idx)
-(define-syntax-class stmt)
-(define-syntax-class expr)
-(define-syntax-class etail)
-(define-syntax-class id)
-(define-syntax-class num)
 (define-namespace-anchor a)
+(define-syntax-class id)
+(define-syntax-class idx)
+(define-syntax-class etail)
+(define-syntax-class expr)
+(define-syntax-class line)
+(define-syntax-class num)
+(define-syntax-class stmt)
 (define ns (namespace-anchor->namespace a))
 (begin-for-syntax
   (define (make-regexp str)
